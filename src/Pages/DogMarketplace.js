@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import cat from '../Assets/cat.png';
 
-
-
 const DogMarketplace = () => {
+  const navigate = useNavigate();
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,6 +80,10 @@ const DogMarketplace = () => {
       priceRange: [0, 10000000],
     });
     setCurrentPage(1);
+  };
+
+  const handlePetClick = (petId) => {
+    navigate(`/pet-detail`);
   };
 
   return (
@@ -224,7 +228,11 @@ const DogMarketplace = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentPets.map((pet) => (
-                  <div key={pet.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <div 
+                    key={pet.id} 
+                    className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-transform hover:scale-105"
+                    onClick={() => handlePetClick(pet.id)}
+                  >
                     <img 
                       src={pet.image || '/api/placeholder/200/200'} 
                       alt={pet.name}
