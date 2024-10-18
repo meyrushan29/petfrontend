@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import cat from '../Assets/cat.png';
+
+
 
 const DogMarketplace = () => {
   const [pets, setPets] = useState([]);
@@ -14,17 +16,36 @@ const DogMarketplace = () => {
     breed: '',
     priceRange: [0, 10000000],
   });
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('popular');
 
   useEffect(() => {
     fetchPets();
-  }, [currentPage]);
+  }, [currentPage, filters, sortBy]);
 
   const fetchPets = async () => {
     try {
       setLoading(true);
       const response = await fetch('https://monitor-backend-rust.vercel.app/api/pets');
       if (!response.ok) throw new Error('Failed to fetch pets');
-      const data = await response.json();
+      let data = await response.json();
+
+      // Apply filters
+      data = data.filter(pet => {
+        if (filters.gender && pet.gender !== filters.gender) return false;
+        if (filters.color && pet.color !== filters.color) return false;
+        if (filters.breed && pet.breed !== filters.breed) return false;
+        if (pet.price < filters.priceRange[0] || pet.price > filters.priceRange[1]) return false;
+        return true;
+      });
+
+      // Apply sorting
+      if (sortBy === 'priceLowToHigh') {
+        data.sort((a, b) => a.price - b.price);
+      } else if (sortBy === 'priceHighToLow') {
+        data.sort((a, b) => b.price - a.price);
+      }
+
       setPets(data);
       setTotalPages(Math.ceil(data.length / 9));
     } catch (err) {
@@ -43,38 +64,66 @@ const DogMarketplace = () => {
   const indexOfFirstPet = indexOfLastPet - 9;
   const currentPets = pets.slice(indexOfFirstPet, indexOfLastPet);
 
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [filterType]: value
+    }));
+    setCurrentPage(1);
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      gender: '',
+      color: '',
+      breed: '',
+      priceRange: [0, 10000000],
+    });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div>
-          <img src={cat} alt="" />
+        <div className="mb-8">
+          <img src={cat} alt="Banner" className="w-full h-auto rounded-xl" />
         </div>
-        <div className="flex gap-8">
+        
+        {/* Mobile filter toggle */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg flex items-center justify-center"
+          >
+            <Filter className="mr-2" />
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-8">
           {/* Filters Sidebar */}
-          <div className="w-64 flex-shrink-0">
+          <div className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-64 flex-shrink-0`}>
             <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-lg font-semibold mb-4">Filter</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Filter</h2>
+                <button onClick={resetFilters} className="text-blue-600 hover:underline">Reset</button>
+              </div>
 
               {/* Gender Filter */}
               <div className="mb-6">
                 <h3 className="font-medium mb-2">Gender</h3>
                 <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600"
-                      onChange={(e) => setFilters({ ...filters, gender: e.target.checked ? 'Male' : '' })}
-                    />
-                    <span className="ml-2">Male</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600"
-                      onChange={(e) => setFilters({ ...filters, gender: e.target.checked ? 'Female' : '' })}
-                    />
-                    <span className="ml-2">Female</span>
-                  </label>
+                  {['Male', 'Female'].map(gender => (
+                    <label key={gender} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded text-blue-600"
+                        checked={filters.gender === gender}
+                        onChange={() => handleFilterChange('gender', filters.gender === gender ? '' : gender)}
+                      />
+                      <span className="ml-2">{gender}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -82,48 +131,20 @@ const DogMarketplace = () => {
               <div className="mb-6">
                 <h3 className="font-medium mb-2">Color</h3>
                 <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-red-600" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
-                      Red
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-orange-600" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-orange-500 mr-2"></div>
-                      Apricot
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-gray-900" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-black mr-2"></div>
-                      Black
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-gray-200 border border-gray-400 mr-2"></div>
-                      Black & White
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-gray-300 mr-2"></div>
-                      Silver
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded" />
-                    <div className="ml-2 flex items-center">
-                      <div className="w-4 h-4 rounded-full bg-amber-700 mr-2"></div>
-                      Tan
-                    </div>
-                  </label>
+                  {['Red', 'Apricot', 'Black', 'Black & White', 'Silver', 'Tan'].map(color => (
+                    <label key={color} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded text-blue-600"
+                        checked={filters.color === color}
+                        onChange={() => handleFilterChange('color', filters.color === color ? '' : color)}
+                      />
+                      <div className="ml-2 flex items-center">
+                        <div className={`w-4 h-4 rounded-full mr-2 ${color.toLowerCase().replace(' & ', '-')}`}></div>
+                        {color}
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -131,9 +152,21 @@ const DogMarketplace = () => {
               <div className="mb-6">
                 <h3 className="font-medium mb-2">Price</h3>
                 <div className="flex items-center gap-2">
-                  <input type="text" placeholder="Min" className="w-20 p-1 border rounded" />
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    className="w-24 p-1 border rounded"
+                    value={filters.priceRange[0]}
+                    onChange={(e) => handleFilterChange('priceRange', [parseInt(e.target.value), filters.priceRange[1]])}
+                  />
                   <span>-</span>
-                  <input type="text" placeholder="Max" className="w-20 p-1 border rounded" />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    className="w-24 p-1 border rounded"
+                    value={filters.priceRange[1]}
+                    onChange={(e) => handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])}
+                  />
                 </div>
               </div>
 
@@ -141,18 +174,17 @@ const DogMarketplace = () => {
               <div>
                 <h3 className="font-medium mb-2">Breed</h3>
                 <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-blue-600" />
-                    <span className="ml-2">Small</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-blue-600" />
-                    <span className="ml-2">Medium</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="rounded text-blue-600" />
-                    <span className="ml-2">Large</span>
-                  </label>
+                  {['Small', 'Medium', 'Large'].map(breed => (
+                    <label key={breed} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded text-blue-600"
+                        checked={filters.breed === breed}
+                        onChange={() => handleFilterChange('breed', filters.breed === breed ? '' : breed)}
+                      />
+                      <span className="ml-2">{breed}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>
@@ -161,12 +193,16 @@ const DogMarketplace = () => {
           {/* Dogs Grid */}
           <div className="flex-1">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Small Dog <span className="text-gray-500 text-sm">(52 puppies)</span></h2>
-              <select className="border rounded-lg px-3 py-2 bg-white">
-                <option>Sort by: Popular</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+              <h2 className="text-xl font-semibold mb-2 sm:mb-0">Small Dog <span className="text-gray-500 text-sm">({pets.length} puppies)</span></h2>
+              <select
+                className="border rounded-lg px-3 py-2 bg-white w-full sm:w-auto"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="popular">Sort by: Popular</option>
+                <option value="priceLowToHigh">Price: Low to High</option>
+                <option value="priceHighToLow">Price: High to Low</option>
               </select>
             </div>
 
@@ -186,7 +222,7 @@ const DogMarketplace = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentPets.map((pet) => (
                   <div key={pet.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <img 
@@ -197,10 +233,10 @@ const DogMarketplace = () => {
                     <div className="p-4">
                       <h3 className="font-medium text-lg mb-2">{pet.name}</h3>
                       <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <span className="font-semibold">Gender:</span>
                           <span>{pet.gender}</span>
-                          <span className="font-semibold ml-4">Age:</span>
+                          <span className="font-semibold">Age:</span>
                           <span>{pet.age} months</span>
                         </div>
                         <p className="text-blue-600 font-semibold">{formatPrice(pet.price)}</p>
@@ -217,7 +253,7 @@ const DogMarketplace = () => {
                 <button 
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border rounded-lg"
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
                 >
                   <ChevronLeft />
                 </button>
@@ -225,7 +261,7 @@ const DogMarketplace = () => {
                 <button 
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border rounded-lg"
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
                 >
                   <ChevronRight />
                 </button>
