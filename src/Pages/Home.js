@@ -14,7 +14,7 @@ const Home = () => {
         <div className="flex items-center gap-12">
           {/* Logo */}
           <div className="flex items-center">
-            <img src={logo01} alt="Monito Logo" className="h-12 w-auto" />
+            <img src={logo01} alt="Monito Logo" className="h-auto w-auto" />
           </div>
           
           {/* Navigation Links for desktop */}
@@ -124,7 +124,7 @@ const Home = () => {
           <img 
             src={logo}
             alt="Happy person with a corgi" 
-            className="w-full h-auto object-cover rounded-3xl relative z-10"
+            className="w-auto h-auto object-cover rounded-3xl relative z-10"
           />
         </div>
       </main>
